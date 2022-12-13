@@ -1,24 +1,21 @@
 from flask import Flask, session
 from flask import request, jsonify
-
+from bson.objectid import ObjectId
 import pymongo
 import datetime
 
 # standard flask application
 app = Flask(__name__)
 app.secret_key = "secretkey"
-app.config['MONGO_URI'] = 'mongodb://localhost:27017/empower-auth'
+app.config['MONGO_URI'] = 'mongodb://127.0.0.1:27017/empower-auth'
 app.config['MONGO_DBNAME'] = 'empower-auth'
 
-client = pymongo.MongoClient('localhost', 27017)
+client = pymongo.MongoClient('127.0.0.1', 27017)
 db = client['empower-auth']
-
-
 
 #db.books.find().sort({title:1}) 1 is accending order, -1 is dendening order
 # .limit
 # find(person: ["Jack","Zhang"]) is find exatcly these 2 identies, no [ ] means 'contains'
-
 
 @app.route("/login", methods=['POST'])
 def login():
@@ -40,14 +37,45 @@ def login():
         res.status_code = 300
         return res
     
+@app.route("/summary", methods=['POST','GET'])
+def summary():
+    userid = session.get('userid') # based on login user _id
+    if userid == None:
+        res = jsonify('logout')
+        res.status_code = 300
+        return res
+    else:
+        date = request.values.get('date')
+        if date == None:
+            res = jsonify('Missing date parameter')
+            res.status_code = 300
+        else:
+            try:
+                # dt = datetime.time()
+                date = datetime.datetime.strptime(date, '%Y-%m-%d')
+                activity = list(db.daily_activity_summary.find({
+                    "patient": ObjectId(userid),
+                    "date": date
+                }))
+                if len(activity) > 0:
+                    choosen_activity = activity[0]
+                    data = {
+                        'steps': choosen_activity['steps'],
+                        'distance': choosen_activity['distance'],
+                        'calories': choosen_activity['calories'],
+                        'active_minutes': choosen_activity['duration']
+                    }
+                    res = jsonify(data)
+                else:
+                    res = jsonify("")
+            except Exception as e:
+                res = jsonify("invalid date format, please enter date format as YY-MM-D")
+                res.status_code = 300
+        return res
 
-    
-
-# @app.route("/summary", methods=['POST','GET'])
-# def summary():
 
 # @app.route("/rank", methods=['POST'])
 # def rank():
 
 if __name__ == '__main__':
-    app.run(host ='0.0.0.0', port = 5000, debug = False )
+    app.run(host ='0.0.0.0', port = 5000, debug = True )
