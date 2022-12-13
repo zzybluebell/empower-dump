@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, session
 from flask import request, jsonify
 
 import pymongo
@@ -22,11 +22,24 @@ db = client['empower-auth']
 
 @app.route("/login", methods=['POST'])
 def login():
+    
     data = []
+    #from:the key/value pairs in the body, from a HTML post form, or JavaScript request that isn't JSON encoded
     if request.form:
         username = request.form['username']
         password = request.form['password']
-        data = list()
+        data = list(db.patient.find({
+            'username': username,
+            'password': password
+        }).limit(1))
+    if len(data) > 0:
+        session['userid'] = str(data[0]['_id'])
+        return jsonify('successful')
+    else:
+        res = jsonify('fail')
+        res.status_code = 300
+        return res
+    
 
     
 
