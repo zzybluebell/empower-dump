@@ -74,8 +74,44 @@ def summary():
         return res
 
 
-# @app.route("/rank", methods=['POST'])
-# def rank():
+@app.route("/rank", methods=['POST','GET'])
+def rank():
+    rank_list = db.daily_activity_summary.aggregate([
+        {
+            "$lookup":{
+                "from": "patient",
+                "localField": "patient",
+                "foreignField": "_id",
+                "as": "patients"
+            }
+        },
+        {
+            "$group":{
+                "_id":"$patient",
+                "total_steps": { "$sum": "$steps" },
+                "username": {
+                    "$max": {
+                        "$arrayElemAt": ["$patients.username", 0]
+                    }
+                }
+            }
+        },
+        {
+            "$sort": {
+                "total_steps": -1
+            }
+        },
+        {
+            "$project":{
+                "_id": 0,
+                "username": 1
+            }
+        },
+    ]);
+    username_list  = []
+    for patient in list(rank_list):
+        username_list.append(patient['username'])
+    return jsonify(username_list)
 
 if __name__ == '__main__':
     app.run(host ='0.0.0.0', port = 5000, debug = True )
