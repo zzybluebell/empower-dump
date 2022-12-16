@@ -13,15 +13,10 @@ app.config['MONGO_DBNAME'] = 'empower-auth'
 client = pymongo.MongoClient('127.0.0.1', 27017)
 db = client['empower-auth']
 
-#db.books.find().sort({title:1}) 1 is accending order, -1 is dendening order
-# .limit
-# find(person: ["Jack","Zhang"]) is find exatcly these 2 identies, no [ ] means 'contains'
-
 @app.route("/login", methods=['POST'])
 def login():
     
     data = []
-    #from:the key/value pairs in the body, from a HTML post form, or JavaScript request that isn't JSON encoded
     if request.form:
         username = request.form['username']
         password = request.form['password']
